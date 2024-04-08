@@ -1,4 +1,4 @@
-connection_string = "dbname=postgres user=postgres password=password"
+connection_string = "host=localhost dbname=postgres user=postgres password=password"
 
 test_employee = {
     "emp_no": 1,

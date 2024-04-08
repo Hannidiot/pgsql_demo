@@ -1,35 +1,60 @@
-from psycopg import AsyncCursor
+from psycopg import AsyncConnection, AsyncCursor
 from utils import get_async_connection_and_cursor
 from static import test_employee
 
 async def run():
-    async with get_async_connection_and_cursor() as (_, cursor):
-        # await test_select(cursor)
-        # await check_existence(cursor, False)
-        await test_insert(cursor)
-        # await check_existence(cursor, True)
-        
+    # await test_select(cursor)
+    await check_existence(False)
+    await test_insert()
+    await check_existence(True)
+
+    await test_update()
+
+    await test_delete()
+    await check_existence(False)
+
     print("test success")
             
-async def test_select(cur: AsyncCursor):
-    get_top10_employees = "select * from employees.employees order by emp_no DESC LIMIT 10"
-    await cur.execute(get_top10_employees)
-    async for emp in cur:
-        print(emp)
+async def test_select():
+    async with get_async_connection_and_cursor() as (conn, cursor):
+        get_top10_employees = "select * from employees.employees order by emp_no DESC LIMIT 10"
+        await cursor.execute(get_top10_employees)
+        async for emp in cursor:
+            print(emp)
         
-async def test_insert(cur: AsyncCursor):
-    query = "INSERT into employees.employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (%s, %s, %s, %s, %s, %s)"
-    await cur.execute(query, (test_employee["emp_no"], test_employee["birth_date"], test_employee["first_name"], test_employee["last_name"], test_employee["gender"], test_employee["hire_date"]))
+async def test_insert():
+    async with get_async_connection_and_cursor() as (conn, cursor):
+        query = "INSERT into employees.employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (%s, %s, %s, %s, %s, %s)"
+        try:
+            await cursor.execute(query, (test_employee["emp_no"], test_employee["birth_date"], test_employee["first_name"], test_employee["last_name"], test_employee["gender"], test_employee["hire_date"]))
+            await conn.commit()
+        except Exception as ex:
+            print("exception happens when executing insert")
+            print(ex)
 
-async def test_update(cur: AsyncCursor):
-    pass
+async def test_update():
+    async with get_async_connection_and_cursor() as (conn, cursor):
+        query = "UPDATE employees.employees SET first_name = %s WHERE emp_no = %s"
+        await cursor.execute(query, ("NoHanni", test_employee["emp_no"]))
+        await conn.commit()
 
-async def test_delete(cur: AsyncCursor):
-    pass
+    async with get_async_connection_and_cursor() as (_, cursor):
+        query = "select * from employees.employees where emp_no = %s"
+        await cursor.execute(query, (test_employee["emp_no"], ))
+        emp = await cursor.fetchone()
+        if (emp[2] != "NoHanni"):
+            raise Exception("Update check failed")
 
-async def check_existence(cur: AsyncCursor, is_exist: bool):
-    query = "select * from employees.employees where first_name = %s"
-    await cur.execute(query, (test_employee["first_name"],))
-    emp = await cur.fetchone()
-    if ((emp is not None) != is_exist):
-        print(f'check_existence is not as expected')
+async def test_delete():
+    async with get_async_connection_and_cursor() as (conn, cursor):
+        query = "DELETE FROM employees.employees WHERE emp_no = %s"
+        await cursor.execute(query, (test_employee["emp_no"], ))
+        await conn.commit()
+
+async def check_existence(is_exist: bool):
+    async with get_async_connection_and_cursor() as (conn, cursor):
+        query = "select * from employees.employees where first_name = %s"
+        await cursor.execute(query, (test_employee["first_name"],))
+        emp = await cursor.fetchone()
+        if ((emp is not None) != is_exist):
+            raise Exception('check_existence is not as expected')
