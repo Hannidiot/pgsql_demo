@@ -1,5 +1,6 @@
 from pooling.connection_with_pool import get_async_connection_and_cursor, async_pool
 from static import test_employee
+from logger import logger
 
 async def run():
     await async_pool.open()
@@ -15,14 +16,14 @@ async def run():
     
     await async_pool.close()
 
-    print("test success")
+    logger.info("test success")
             
 async def test_select():
     async with get_async_connection_and_cursor() as (conn, cursor):
         get_top10_employees = "select * from employees.employees order by emp_no DESC LIMIT 10"
         await cursor.execute(get_top10_employees)
         async for emp in cursor:
-            print(emp)
+            logger.debug(emp)
         
 async def test_insert():
     async with get_async_connection_and_cursor() as (conn, cursor):
@@ -32,8 +33,8 @@ async def test_insert():
             await cursor.execute(query, test_employee)
             await conn.commit()
         except Exception as ex:
-            print("exception happens when executing insert")
-            print(ex)
+            logger.error("exception happens when executing insert")
+            logger.error(ex)
 
 async def test_update():
     async with get_async_connection_and_cursor() as (conn, cursor):
