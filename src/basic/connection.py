@@ -8,7 +8,7 @@ def get_connection_and_cursor():
     connection = None
     cursor = None
     try:
-        connection = psycopg.connect(connection_string)
+        connection = psycopg.connect(connection_string, row_factory=psycopg.rows.dict_row)
         cursor = connection.cursor()
         
         yield connection, cursor
@@ -24,7 +24,7 @@ async def get_async_connection_and_cursor():
     cur = None
     try:
         # Connect to the database asynchronously
-        conn = await psycopg.AsyncConnection.connect(connection_string)
+        conn = await psycopg.AsyncConnection.connect(connection_string, row_factory=psycopg.rows.dict_row)
         # Create a cursor
         cur = conn.cursor()
 

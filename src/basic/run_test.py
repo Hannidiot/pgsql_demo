@@ -1,5 +1,4 @@
-from psycopg import AsyncConnection, AsyncCursor
-from utils import get_async_connection_and_cursor
+from basic.connection import get_async_connection_and_cursor
 from static import test_employee
 
 async def run():
@@ -24,9 +23,10 @@ async def test_select():
         
 async def test_insert():
     async with get_async_connection_and_cursor() as (conn, cursor):
-        query = "INSERT into employees.employees (emp_no, birth_date, first_name, last_name, gender, hire_date) VALUES (%s, %s, %s, %s, %s, %s)"
+        query = """INSERT into employees.employees (emp_no, birth_date, first_name, last_name, gender, hire_date) 
+            VALUES (%(emp_no)s, %(birth_date)s, %(first_name)s, %(last_name)s, %(gender)s, %(hire_date)s)"""
         try:
-            await cursor.execute(query, (test_employee["emp_no"], test_employee["birth_date"], test_employee["first_name"], test_employee["last_name"], test_employee["gender"], test_employee["hire_date"]))
+            await cursor.execute(query, test_employee)
             await conn.commit()
         except Exception as ex:
             print("exception happens when executing insert")
@@ -42,7 +42,7 @@ async def test_update():
         query = "select * from employees.employees where emp_no = %s"
         await cursor.execute(query, (test_employee["emp_no"], ))
         emp = await cursor.fetchone()
-        if (emp[2] != "NoHanni"):
+        if (emp["first_name"] != "NoHanni"):
             raise Exception("Update check failed")
 
 async def test_delete():
